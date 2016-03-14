@@ -3,16 +3,42 @@
   register: need_bootstrap
   ignore_errors: True
 
-- name: CoreOS | Run bootstrap.sh
-  script: bootstrap.sh
-  environment:
-    BOOTSTRAP_SCRIPT_DIR: "{{ bootstrap_script_dir }}"
-    http_proxy: "{{ http_proxy|default('') }}"
-    https_proxy: "{{ https_proxy|default('') }}"
-  when: need_bootstrap | failed
+- name: CoreOS | Create bootstrap directory
+  raw: mkdir -p {{ bootstrap_script_dir }}
 
-- name: CoreOS | Add /opt/bin to PATH for bootstrapping
-  copy:
-    src=opt-path.sh
-    dest=/etc/profile.d/opt-path.sh
-    mode=0755
+- name: CoreOS | Check if we need to download pypy source
+  raw: stat /tmp/pypy-{{ pypy_version }}-linux64.tar.bz2
+  register: need_pypy_tar
+  ignore_errors: True
+
+#- name: CoreOS | Download pypy source
+#  raw: wget -O /tmp/pypy-{{ pypy_version }}-linux64.tar.bz2 {{ pypy_base_url }}pypy-{{ pypy_version }}-linux64.tar.bz2
+#  when: need_pypy_tar
+
+- name: CoreOS | Extract pypy tar to tmp
+  raw: tar -xjf /tmp/pypy-{{ pypy_version }}-linux64.tar.bz2 -C /tmp
+
+- name: CoreOS | Move pypy source to bootstrap directory
+  raw: mv -n /tmp/pypy-{{ pypy_version }}-linux64 {{ bootstrap_script_dir }}/pypy
+
+- name: CoreOS | Make pypy lib directory and link ncurses .so
+  raw: mkdir -p {{ bootstrap_script_dir }}/pypy/lib && ln -snf /lib64/libncurses.so.5.9 {{ bootstrap_script_dir }}/pypy/lib/libtinfo.so.5
+
+- name: CoreOS | Add python exec proxy to boostrap directory
+  raw: |
+          cat > {{ bootstrap_script_dir }}/python <<EOF 
+          #!/bin/bash 
+          LD_LIBRARY_PATH={{ bootstrap_script_dir }}/pypy/lib:$LD_LIBRARY_PATH exec {{ bootstrap_script_dir }}/pypy/bin/pypy "\$@" 
+          
+          
+- name: CoreOS | Add exec permission to python exec proxy
+  raw: chmod +x {{ bootstrap_script_dir }}/python
+
+- name: CoreOS | Add opt-path.sh to profile.d
+  raw: |
+         cat > /etc/profile.d/opt-path.sh << EOF
+         #! /usr/bin/bash
+         PATH=\$PATH:/opt/bin
+
+- name: CoreOS | Change opt-path permissions to 0755 and owner to root
+  raw: chmod 0755 /etc/profile.d/opt-path.sh && chown root /etc/profile.d/opt-path.sh
