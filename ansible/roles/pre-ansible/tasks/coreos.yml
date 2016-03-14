@@ -10,3 +10,9 @@
     http_proxy: "{{ http_proxy|default('') }}"
     https_proxy: "{{ https_proxy|default('') }}"
   when: need_bootstrap | failed
+
+- name: CoreOS | Add /opt/bin to PATH for bootstrapping
+  copy:
+    src=opt-path.sh
+    dest=/etc/profile.d/opt-path.sh
+    mode=0755
