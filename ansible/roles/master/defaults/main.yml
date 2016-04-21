@@ -1,7 +1,14 @@
-kube_master_insecure_port: 8080
+kube_api_insecure_port: 8080
+
+kube_master_api_port: 443
+
+kube_apiserver_interface: "{{ ansible_default_ipv4.interface }}"
+kube_apiserver_endpoint: "{% if groups['masters']|length > 1 %}{{ kube_apiserver_vip }}{% else %}{{ groups['masters'][0] }}{% endif %}"
 
 localBuildOutput: ../../_output/local/go/bin
 
 admission_controllers: NamespaceLifecycle,NamespaceExists,LimitRanger,ServiceAccount,ResourceQuota
 
-kube_apiserver_bind_address: "0.0.0.0"
+kube_apiserver_bind_address: "{% if groups['masters']|length > 1 %}{{ hostvars[inventory_hostname]['ansible_' + kube_apiserver_interface].ipv4.address }}{% else %}0.0.0.0{% endif %}"
+
+hyperkube_version: "v1.1.8"

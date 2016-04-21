@@ -45,6 +45,7 @@ kube_token_dir: "{{ kube_config_dir }}/tokens"
 # This is where you can drop yaml/json files and the kubelet will run those
 # pods on startup
 kube_manifest_dir: "{{ kube_config_dir }}/manifests"
+kube_standby_manifest_dir: "{{ kube_config_dir }}/standby_manifests"
 
 # This is the group that the cert creation scripts chgrp the
 # cert files to. Not really changeable...

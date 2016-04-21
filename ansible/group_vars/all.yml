@@ -40,6 +40,9 @@ insecure_registrys:
 # The port that the Kubernetes apiserver component listens on.
 kube_master_api_port: 443
 
+# Endpoint for Kubernetes apiservers
+kube_apiserver_endpoint: "{% if groups['masters']|length > 1 %}{{ kube_apiserver_vip }}{% else %}{{ groups['masters'][0] }}{% endif %}"
+
 # Kubernetes internal network for services.
 # Kubernetes services will get fake IP addresses from this range.
 # This range must not conflict with anything in your infrastructure. These
